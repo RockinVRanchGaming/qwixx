@@ -247,7 +247,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 #rot, #rot * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 #bEye[aria-pressed="false"] { opacity: 1; }
 #bEye { background: linear-gradient(150deg, #9A6BD3, #5B3A94); }
-#bEye .sl { display: none; } #bEye[aria-pressed="false"] .sl { display: inline; }
+#bEye { align-content: center; gap: 1px; } #bEye svg { width: 22px; height: 22px; } #bEye .el { font: 800 9px/1 Nunito, sans-serif; letter-spacing: .05em; } #bEye .sl { display: none; } #bEye[aria-pressed="false"] .sl { display: inline; }
 .score.hid, .gt.hid { letter-spacing: .04em; }
 #bQuit { background: linear-gradient(150deg, #8C8576, #4C4639); }
 .closed p + small { color: var(--muted); font-size: 16px; max-width: 360px; line-height: 1.4; }
@@ -278,7 +278,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       <button class="rb" id="bReset" type="button" aria-label="Reset the card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
       <button class="rb" id="bSound" type="button" aria-label="Sound on or off" aria-pressed="true"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9z"/><path class="wv" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-linecap="round" stroke-width="2.2"/><path class="mx" d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke-linecap="round" stroke-width="2.4"/></svg></button>
       <button class="rb bare" id="bDice" type="button" aria-label="Roll the dice"><svg viewBox="0 0 34 26" aria-hidden="true"><defs><linearGradient id="gDie" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--dce-a)"/><stop offset="1" style="stop-color:var(--dce-b)"/></linearGradient></defs><g transform="rotate(-12 10 14)"><rect x="2.5" y="6" width="15" height="15" rx="3.6" fill="#FFFFFF"/><circle cx="6.3" cy="9.8" r="1.35" fill="#1D1D26"/><circle cx="10" cy="13.5" r="1.35" fill="#1D1D26"/><circle cx="13.7" cy="17.2" r="1.35" fill="#1D1D26"/></g><g transform="rotate(10 23.5 12.5)"><rect x="16" y="5" width="15" height="15" rx="3.6" fill="url(#gDie)"/><circle cx="19.8" cy="8.8" r="1.35" fill="#FFFFFF"/><circle cx="27.2" cy="8.8" r="1.35" fill="#FFFFFF"/><circle cx="23.5" cy="12.5" r="1.35" fill="#FFFFFF"/><circle cx="19.8" cy="16.2" r="1.35" fill="#FFFFFF"/><circle cx="27.2" cy="16.2" r="1.35" fill="#FFFFFF"/></g></svg></button>
-      <button class="rb" id="bEye" type="button" hidden aria-label="Show or hide scores" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path class="sl" d="M4 4l16 16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <button class="rb" id="bEye" type="button" hidden aria-label="Hide scores" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path class="sl" d="M4 4l16 16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span class="el">HIDE</span></button>
       <button class="rb" id="bQuit" type="button" aria-label="Close the app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg></button>
     </div>
     <div class="totals" id="totals"></div>
@@ -432,7 +432,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     if (settings.sameBonus) t += '<div class="gt bon' + (s.b.samePts && !mask ? ' got' : '') + '" aria-label="Same numbers bonus ' + (mask ? 'hidden' : s.b.samePts + ' points') + '"><small class="t">BONUS</small>' + (mask ? '?' : s.b.samePts) + '<small class="b">4 NUMBERS</small></div>';
     t += '<div class="gt pts" aria-label="Penalty points">' + (mask ? '?' : (s.pens ? '−' + s.pens * PEN_PTS : 0)) + '</div>';
     t += '<div class="gt total" aria-label="Total score">' + (mask ? '?' : s.total) + '</div>';
-    var eye = $('bEye'); eye.hidden = !(settings.hideScores && settings.track && !over0); eye.setAttribute('aria-pressed', !revealed ? 'false' : 'true');
+    var eye = $('bEye'); eye.hidden = !(settings.track && !over0); eye.setAttribute('aria-pressed', settings.hideScores ? 'false' : 'true'); eye.setAttribute('aria-label', settings.hideScores ? 'Show scores' : 'Hide scores'); eye.querySelector('.el').textContent = settings.hideScores ? 'SHOW' : 'HIDE';
     $('totals').innerHTML = t;
     document.querySelector('.app').classList.toggle('noscore', !settings.track);
     $('bDice').hidden = !settings.dice;
@@ -628,13 +628,28 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     }).catch(function () {});
   })();
 
+  var lastDown = 0, lastKey = '';
+  function isMark(b) { return b && (b.hasAttribute('data-i') || b.hasAttribute('data-pen') || b.hasAttribute('data-closed')); }
+  function tapKey(b) { return [b.getAttribute('data-r'), b.getAttribute('data-i'), b.getAttribute('data-pen'), b.getAttribute('data-closed')].join(':'); }
+  // Marks register the instant the finger lands, so a tap is never lost to a swallowed click. The click that follows is ignored.
+  document.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!isMark(b) || b.disabled) return;
+    lastDown = Date.now(); lastKey = tapKey(b); onTap(e, true);
+  });
   document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (isMark(b) && e.detail !== 0 && Date.now() - lastDown < 900 && tapKey(b) === lastKey) return;
+    onTap(e, false);
+  });
+  function onTap(e, viaDown) {
     var b = e.target.closest ? e.target.closest('button') : null;
     if (!b) return;
     if (b.id === 'bBack') { goBack(); return; }
     if (b.id === 'newGame') { $('bReset').click(); return; }
-    if (b.id === 'bEye') { revealed = !revealed; render(); buzz(); tone(revealed ? 700 : 480, 0.05, 'triangle'); return; }
-    var kb = e.detail === 0;
+    if (b.id === 'bEye') { settings.hideScores = !settings.hideScores; revealed = false; saveSet(); buzz(); tone(settings.hideScores ? 480 : 700, 0.05, 'triangle'); return; }
+    var kb = !viaDown && e.detail === 0;
     if (b.hasAttribute('data-i')) {
       var r = +b.getAttribute('data-r'), i = +b.getAttribute('data-i'), was = state.rows[r][i], over0 = gameOver();
       change(function () { state.rows[r][i] = was ? 0 : 1; }, '[data-r="' + r + '"][data-i="' + i + '"]', kb, !was);
@@ -651,7 +666,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       change(function () { state.closed[c] = wc ? 0 : 1; }, '[data-closed="' + c + '"]', kb, !wc);
       if (wc) say(COLORS_SAY[c] + ' reopened'); else if (!over2 && gameOver()) say(COLORS_SAY[c] + ' is locked out. Game over for everyone, even Steven.'); else speakWith(COLORS_SAY[c] + ' is locked out', banter('lock'));
     }
-  });
+  }
 
   /* reset with undo */
   var undoSnap = null, toastTimer = null;
