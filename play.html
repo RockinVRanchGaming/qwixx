@@ -312,6 +312,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       <div class="li"><span>Sound</span><button class="sw" id="swSound" type="button" role="switch" aria-checked="true" aria-label="Sound"></button></div>
       <div class="li"><span>Voice callouts</span><button class="sw" id="swVoice" type="button" role="switch" aria-checked="true" aria-label="Voice callouts"></button></div>
       <div class="li"><span>Banter after callouts</span><button class="sw" id="swBanter" type="button" role="switch" aria-checked="true" aria-label="Banter after callouts"></button></div>
+      <div class="li"><span>Auto-update new lines and sounds</span><button class="sw" id="swAuto" type="button" role="switch" aria-checked="true" aria-label="Auto-update new lines and sounds"></button></div>
       <div class="li"><span>Voice</span><select class="sel" id="selVoice" aria-label="Voice"><option value="">Automatic (best match)</option></select></div>
       <div class="li"><span>Turn screen sideways</span><div class="seg" role="group" aria-label="Turn screen sideways"><button type="button" data-rot="auto">Auto</button><button type="button" data-rot="off">Off</button></div></div>
       <div class="li"><span>Voice style</span><div class="seg" role="group" aria-label="Voice style"><button type="button" data-vstyle="smooth">Smooth</button><button type="button" data-vstyle="natural">Natural</button><button type="button" data-vstyle="bright">Bright</button></div></div>
@@ -354,7 +355,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   var stats = { best: 0, games: 0 };
   var hist = []; (function () { var h0 = load(K_HIST); if (Array.isArray(h0)) h0.forEach(function (e) { if (e && valid(e.s)) hist.push(e); }); if (hist.length > 400) hist = hist.slice(-400); })();
   var st0 = load(K_STATS); if (st0 && typeof st0.best === 'number' && typeof st0.games === 'number') stats = st0;
-  var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'smooth', wake: false, dice: true, track: true, closings: 3, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true };
+  var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'smooth', wake: false, dice: true, track: true, closings: 3, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true, autoUpdate: true };
   function defaults() { var o = {}; for (var k in DEF) o[k] = DEF[k]; return o; }
   var settings = defaults();
   var se0 = load(K_SET);
@@ -508,17 +509,18 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     try { voices = (window.speechSynthesis.getVoices() || []).filter(function (v) { return /^en/i.test(v.lang); }); } catch (e) { voices = []; }
     fillVoices();
   }
-  function say(text) {
+  function say(text, cb) {
     if (!settings.voice || !settings.sound) return;
     try {
-      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (cb) cb(); return; }
       var vs = settings.vstyle, smooth = vs !== 'natural';
       var u = new SpeechSynthesisUtterance(smooth ? text.replace(/^(Red|Yellow|Green|Blue|White) /, '$1, ') : text);
       var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
       u.rate = vs === 'bright' ? 1.05 : (smooth ? 0.86 : 1); u.pitch = vs === 'bright' ? 1.3 : (smooth ? 0.92 : 1); u.volume = 1;
+      if (cb) { var fin = false, once = function () { if (!fin) { fin = true; cb(); } }; u.onend = once; u.onerror = once; setTimeout(once, 7000); }
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
-    } catch (e) {}
+    } catch (e) { if (cb) cb(); }
   }
   try { window.speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {}
   loadVoices();
@@ -540,12 +542,22 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   if (!ban.used || typeof ban.used !== 'object') ban.used = {};
   function gap() { return 7 + Math.floor(Math.random() * 5); }   // next extra line comes after 7 to 11 presses
   if (typeof ban.left !== 'number') ban.left = 2 + Math.floor(Math.random() * 10);   // random start so phones don't line up
+  function ent(x) { return typeof x === 'string' ? { t: x } : x; }
+  function inSeason(x) {
+    if (!x.from || !x.to) return true;
+    var d = new Date(), n = (d.getMonth() + 1) * 100 + d.getDate();
+    var f = +x.from.replace('-', ''), t = +x.to.replace('-', '');
+    return f <= t ? (n >= f && n <= t) : (n >= f || n <= t);
+  }
   function nextLine(g) {
-    var used = ban.used[g] || (ban.used[g] = []), pool = LINES[g].filter(function (x) { return used.indexOf(x) < 0; }), line;
-    if (!pool.length) { used.length = 0; pool = LINES[g].slice(); }
-    if (pool.length > 1 && lastLine) pool = pool.filter(function (x) { return x !== lastLine; });
+    var used = ban.used[g] || (ban.used[g] = []);
+    var all = (LINES[g] || []).map(ent).filter(inSeason);
+    var pool = all.filter(function (x) { return used.indexOf(x.t) < 0; }), line;
+    if (!pool.length) { used.length = 0; pool = all.slice(); }
+    if (!pool.length) return '';
+    if (pool.length > 1 && lastLine) pool = pool.filter(function (x) { return x.t !== lastLine; });
     line = pool[Math.floor(Math.random() * pool.length)];
-    used.push(line); lastLine = line; store(K_BAN, ban);
+    used.push(line.t); lastLine = line.t; store(K_BAN, ban);
     return line;
   }
   function chance(p) { return Math.random() < p; }
@@ -556,7 +568,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     var due = ban.left <= 0;
     if (due) ban.left = gap();
     store(K_BAN, ban);
-    if (kind === 'pick' && r === 3 && i === 0) return 'Damn you Steven.';
+    if (kind === 'pick' && r === 3 && i === 0) return { t: 'Damn you Steven.' };
     if (!due) return '';
     if (kind === 'lock') return nextLine('lock');
     if (kind === 'fail') return nextLine('fail');
@@ -565,7 +577,56 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   }
   function plus(b) { return b ? '. ' + b : ''; }
   // One voice for everything: the callout and the banter line are spoken together.
-  function speakWith(base, line) { say(line ? base + '. ' + line : base); }
+  // Recorded clips (family voices): the callout is spoken, then the clip plays. No clip means the phone voice reads the text.
+  var clipEl = new Audio(), clipReady = false;
+  function unlockClip() {
+    if (clipReady) return; clipReady = true;
+    try { clipEl.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='; var p = clipEl.play(); if (p && p.catch) p.catch(function () { clipReady = false; }); } catch (e) { clipReady = false; }
+  }
+  document.addEventListener('click', unlockClip, true); document.addEventListener('touchend', unlockClip, true);
+  function playClip(item) {
+    if (!settings.sound) return;
+    try {
+      clipEl.onerror = function () { clipEl.onerror = null; say(item.t); };
+      clipEl.src = item.a; clipEl.volume = 1;
+      var p = clipEl.play(); if (p && p.catch) p.catch(function () { say(item.t); });
+    } catch (e) { say(item.t); }
+  }
+  function speakWith(base, line) {
+    var it = line && ent(line);
+    if (!it) { say(base); return; }
+    if (it.a && settings.sound) { if (settings.voice) say(base, function () { playClip(it); }); else playClip(it); return; }
+    say(base + '. ' + it.t);
+  }
+  /* lines.json: new lines, recorded clips and seasonal entries arrive without reinstalling */
+  var K_LINES = 'qwixx-lines-v1';
+  function applyLines(o) {
+    if (!o || !o.lines) return false;
+    var ok = false;
+    Object.keys(o.lines).forEach(function (g) { if (Array.isArray(o.lines[g]) && o.lines[g].length) { LINES[g] = o.lines[g]; ok = true; } });
+    return ok;
+  }
+  function note(msg) {
+    var d = document.createElement('div');
+    d.textContent = msg;
+    d.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);max-width:88vw;background:#26231C;color:#fff;padding:10px 16px;border-radius:20px;font:700 14px Nunito,sans-serif;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+    document.body.appendChild(d); setTimeout(function () { d.remove(); }, 4500);
+  }
+  (function () {
+    var saved = load(K_LINES) || {};
+    if (saved.data) applyLines(saved.data);
+    if (!window.fetch) return;
+    fetch('lines.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (o) {
+      if (!o || !o.lines) return;
+      if (settings.autoUpdate) {
+        applyLines(o);
+        if (saved.version && saved.version !== o.version) note('New lines added');
+        store(K_LINES, { version: o.version, data: o });
+      } else if (!saved.version || saved.version !== o.version) {
+        note('Update available. Turn on Auto-update in settings.');
+      }
+    }).catch(function () {});
+  })();
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('button') : null;
@@ -700,7 +761,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   /* settings */
   var LIM = { closings: [1, 4], colPts: [0, 50], samePts: [0, 50] };
   function paintSettings() {
-    var map = { swSound: 'sound', swVoice: 'voice', swVib: 'vib', swWake: 'wake', swDice: 'dice', swTrack: 'track', swHide: 'hideScores', swBanter: 'banter', swColB: 'colBonus', swSameB: 'sameBonus' };
+    var map = { swSound: 'sound', swVoice: 'voice', swVib: 'vib', swWake: 'wake', swDice: 'dice', swTrack: 'track', swHide: 'hideScores', swBanter: 'banter', swAuto: 'autoUpdate', swColB: 'colBonus', swSameB: 'sameBonus' };
     for (var id in map) $(id).setAttribute('aria-checked', settings[map[id]]);
     $('bSound').setAttribute('aria-pressed', settings.sound);
     Array.prototype.forEach.call(document.querySelectorAll('[data-rot]'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-rot') === settings.rot); });
@@ -720,7 +781,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   document.addEventListener('visibilitychange', wake);
   function saveSet() { store(K_SET, settings); paintSettings(); render(); }
   function setSet(k) { settings[k] = !settings[k]; if (k === 'hideScores') revealed = false; saveSet(); if (k === 'wake') wake(); if (k === 'sound' && settings.sound) tone(600, 0.08, 'triangle'); if (k === 'vib') buzz(15); if (k === 'voice') { if (settings.voice) say('Voice on'); else { try { window.speechSynthesis.cancel(); } catch (e) {} } } }
-  [['swSound', 'sound'], ['swVoice', 'voice'], ['swVib', 'vib'], ['swWake', 'wake'], ['swDice', 'dice'], ['swTrack', 'track'], ['swHide', 'hideScores'], ['swBanter', 'banter'], ['swColB', 'colBonus'], ['swSameB', 'sameBonus'], ['bSound', 'sound']].forEach(function (p) {
+  [['swSound', 'sound'], ['swVoice', 'voice'], ['swVib', 'vib'], ['swWake', 'wake'], ['swDice', 'dice'], ['swTrack', 'track'], ['swHide', 'hideScores'], ['swBanter', 'banter'], ['swAuto', 'autoUpdate'], ['swColB', 'colBonus'], ['swSameB', 'sameBonus'], ['bSound', 'sound']].forEach(function (p) {
     $(p[0]).addEventListener('click', function () { setSet(p[1]); });
   });
   document.addEventListener('click', function (e) {
