@@ -105,6 +105,11 @@ select.sel { min-height: 42px; max-width: 58%; border-radius: 10px; border: 1px 
 .totals { display: grid; grid-auto-flow: column; grid-auto-columns: 54px; gap: 8px; }
 .gt { position: relative; height: 54px; border-radius: 10px; background: var(--gray); color: var(--gray-ink); display: grid; place-items: center; font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; }
 .gt.best { grid-column: span 1; }
+.gt.best.armed { background: linear-gradient(150deg, #E5533F, #B02A1B); color: #fff; }
+.gt.best.armed b { font: 800 11px/1.1 Nunito, sans-serif; letter-spacing: .03em; }
+.mini { width: 78%; max-width: 46px; aspect-ratio: 1; height: auto; border-radius: 22%; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.gt .mini { width: 34px; max-width: 34px; }
+.gt.bon .mini { width: 24px; max-width: 24px; margin-top: -2px; }
 .gt.best .games { position: absolute; left: 100%; top: -12px; margin-left: -14px; width: 26px; height: 26px; border-radius: 50%; background: var(--bg); color: var(--ink); border: 2px solid var(--ink); font-size: 14px; display: grid; place-items: center; z-index: 1; }
 .gt.best small { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font-size: 9px; letter-spacing: .06em; font-weight: 700; opacity: .85; }
 .pen { transition: transform .08s ease; }
@@ -399,6 +404,8 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   var FLAG = '<svg class="flag" viewBox="0 0 28 32" aria-hidden="true"><polygon points="3,3 25,16 3,29"/></svg>';
 
   var revealed = false;
+  var MINI = '<img class="mini" alt="" src="data:image/png;base64,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">';
+  var bestArmed = false, bestT = null;
   function render() {
     var h = '', i, k;
     var s0 = summary(), over0 = s0.closed >= settings.closings || s0.pens >= 4;
@@ -416,7 +423,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       h += info.last
         ? '<div class="' + lc + '" role="img" aria-label="' + lab + '">' + LOCK + '</div>'
         : '<button type="button" class="' + lc + '" data-closed="' + i + '" aria-pressed="' + !!state.closed[i] + '" aria-label="' + lab + '">' + (state.closed[i] ? LOCK : LOCK_OPEN) + '</button>';
-      h += mask ? '<div class="score hid" aria-label="' + r.name + ' points hidden">?</div></div></section>' : '<div class="score" aria-label="' + r.name + ' points">' + info.pts + '<small>' + info.marks + (info.marks === 1 ? ' mark' : ' marks') + '</small></div></div></section>';
+      h += mask ? '<div class="score hid" aria-label="' + r.name + ' points hidden">' + MINI + '</div></div></section>' : '<div class="score" aria-label="' + r.name + ' points">' + info.pts + '<small>' + info.marks + (info.marks === 1 ? ' mark' : ' marks') + '</small></div></div></section>';
     }
     $('bands').innerHTML = h;
     $('bands').style.cssText = 'display:flex;flex-direction:column;gap:8px';
@@ -426,12 +433,14 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       if (hd.t === 'c') hx = nums(hr)[hd.k]; else if (hd.t === 'p') hx = '−' + PEN_PTS; else hx = LOCK;
       t += '<button type="button" class="gt back' + (hd.t === 'p' ? ' penb' : ' ' + hc) + (hd.on ? '' : ' off') + '" id="bBack" aria-label="Go back one step (' + hist.length + ' to undo)"><span class="bt">' + hx + '</span><svg class="ba" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#fff"/><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M7.5 9.5A6 6 0 1 1 6 13M7.5 5v4.5H12"/></svg></button>';
     }
-    t += '<div class="gt best" aria-label="Best score ' + stats.best + ' in ' + stats.games + ' games">' + stats.best + '<small>BEST</small><span class="games">' + stats.games + '</span></div>';
+    t += bestArmed
+      ? '<button type="button" class="gt best armed" id="bBest" aria-label="Tap again to reset best score and games"><b>RESET?</b><span class="games">' + stats.games + '</span></button>'
+      : '<button type="button" class="gt best" id="bBest" aria-label="Best score ' + stats.best + ' in ' + stats.games + ' games. Tap to reset.">' + stats.best + '<small>BEST</small><span class="games">' + stats.games + '</span></button>';
     for (k = 0; k < 4; k++) t += '<button type="button" class="gt pen' + (state.pen[k] ? ' on' : '') + '" data-pen="' + k + '" aria-pressed="' + !!state.pen[k] + '" aria-label="Failed throw ' + (k + 1) + '"><small>−' + PEN_PTS + '</small></button>';
-    if (settings.colBonus) t += '<div class="gt bon' + (s.b.colPts && !mask ? ' got' : '') + '" aria-label="Column bonus ' + (mask ? 'hidden' : s.b.colPts + ' points') + '"><small class="t">BONUS</small>' + (mask ? '?' : s.b.colPts) + '<small class="b">COLUMNS</small></div>';
-    if (settings.sameBonus) t += '<div class="gt bon' + (s.b.samePts && !mask ? ' got' : '') + '" aria-label="Same numbers bonus ' + (mask ? 'hidden' : s.b.samePts + ' points') + '"><small class="t">BONUS</small>' + (mask ? '?' : s.b.samePts) + '<small class="b">4 NUMBERS</small></div>';
-    t += '<div class="gt pts" aria-label="Penalty points">' + (mask ? '?' : (s.pens ? '−' + s.pens * PEN_PTS : 0)) + '</div>';
-    t += '<div class="gt total" aria-label="Total score">' + (mask ? '?' : s.total) + '</div>';
+    if (settings.colBonus) t += '<div class="gt bon' + (s.b.colPts && !mask ? ' got' : '') + '" aria-label="Column bonus ' + (mask ? 'hidden' : s.b.colPts + ' points') + '"><small class="t">BONUS</small>' + (mask ? MINI : s.b.colPts) + '<small class="b">COLUMNS</small></div>';
+    if (settings.sameBonus) t += '<div class="gt bon' + (s.b.samePts && !mask ? ' got' : '') + '" aria-label="Same numbers bonus ' + (mask ? 'hidden' : s.b.samePts + ' points') + '"><small class="t">BONUS</small>' + (mask ? MINI : s.b.samePts) + '<small class="b">4 NUMBERS</small></div>';
+    t += '<div class="gt pts" aria-label="Penalty points">' + (mask ? MINI : (s.pens ? '−' + s.pens * PEN_PTS : 0)) + '</div>';
+    t += '<div class="gt total" aria-label="Total score">' + (mask ? MINI : s.total) + '</div>';
     var eye = $('bEye'); eye.hidden = !(settings.track && !over0); eye.setAttribute('aria-pressed', settings.hideScores ? 'false' : 'true'); eye.setAttribute('aria-label', settings.hideScores ? 'Show scores' : 'Hide scores'); eye.querySelector('.el').textContent = settings.hideScores ? 'SHOW' : 'HIDE';
     $('totals').innerHTML = t;
     document.querySelector('.app').classList.toggle('noscore', !settings.track);
@@ -646,6 +655,10 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   function onTap(e, viaDown) {
     var b = e.target.closest ? e.target.closest('button') : null;
     if (!b) return;
+    if (b.id === 'bBest') {
+      if (!bestArmed) { bestArmed = true; clearTimeout(bestT); bestT = setTimeout(function () { bestArmed = false; render(); }, 3500); buzz(); render(); return; }
+      clearTimeout(bestT); bestArmed = false; stats = { best: 0, games: 0 }; store(K_STATS, stats); render(); buzz(20); tone(300, 0.12, 'sine'); return;
+    }
     if (b.id === 'bBack') { goBack(); return; }
     if (b.id === 'newGame') { $('bReset').click(); return; }
     if (b.id === 'bEye') { settings.hideScores = !settings.hideScores; revealed = false; saveSet(); buzz(); tone(settings.hideScores ? 480 : 700, 0.05, 'triangle'); return; }
