@@ -300,6 +300,9 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 .lock svg { width: auto; height: 46%; }
 .lock { box-shadow: none !important; border: 0 !important; filter: drop-shadow(0 2px 2px rgba(0,0,0,.22)); }
 .score small { font-size: clamp(12px, calc(var(--vh) * 6.4), 26px) !important; }
+
+.resetset.done { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+.sheet-inner { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 </style>
 
 <div id="rot">
@@ -862,7 +865,18 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   $('bSet').addEventListener('click', function () { loadVoices(); show('setSheet'); });
   $('selVoice').addEventListener('change', function () { settings.voiceName = $('selVoice').value; saveSet(); say('Red seven. Nicely done.'); });
   $('hear').addEventListener('click', function () { say('Red seven. Nicely done.'); });
-  $('resetSet').addEventListener('click', function () { settings = defaults(); applyTheme(); saveSet(); wake(); buzz(15); });
+  // Reset settings: fires on finger lift (some phones swallow the click at the bottom of a scrolled sheet), and confirms on screen.
+  var lastReset = 0;
+  function resetSettings() {
+    if (Date.now() - lastReset < 800) return; lastReset = Date.now();
+    settings = defaults(); revealed = false; applyTheme(); saveSet(); wake(); fit(); buzz(25); tone(520, 0.08, 'triangle'); setTimeout(function () { tone(700, 0.1, 'triangle'); }, 90);
+    var rb = $('resetSet'); rb.textContent = 'Settings are back to the defaults'; rb.classList.add('done'); setTimeout(function () { rb.textContent = 'Reset settings'; rb.classList.remove('done'); }, 2200);
+  }
+  $('resetSet').addEventListener('click', resetSettings);
+  (function () { var d = null, rb = $('resetSet');
+    rb.addEventListener('pointerdown', function (e) { d = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+    rb.addEventListener('pointerup', function (e) { if (d && Math.abs(e.clientX - d.x) < 12 && Math.abs(e.clientY - d.y) < 12 && Date.now() - d.t < 800) resetSettings(); d = null; });
+  })();
   var armed = false, armT = null;
   $('clearStats').addEventListener('click', function () {
     var b = $('clearStats');
