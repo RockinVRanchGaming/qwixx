@@ -560,6 +560,32 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     try { voices = (window.speechSynthesis.getVoices() || []).filter(function (v) { return /^en/i.test(v.lang); }); } catch (e) { voices = []; }
     fillVoices();
   }
+  /* speech: iPhones only let a page talk after a real tap, and the speech engine can stall after the app sleeps.
+     So the first callout waits for the finger to lift, a silent line unlocks speech on the first tap, and a stalled engine is reset. */
+  var spOK = false, spWait = null;
+  function speakNow(u) {
+    var ss = window.speechSynthesis;
+    try { if (ss.paused) ss.resume(); } catch (e) {}
+    if (!spOK) { spWait = u; return; }
+    try { if (ss.speaking || ss.pending) ss.cancel(); } catch (e) {}
+    ss.speak(u);
+    // If the engine is stuck it never starts; give it one reset and retry.
+    var started = false; u.addEventListener('start', function () { started = true; });
+    setTimeout(function () { try { if (!started && !ss.speaking) { ss.cancel(); ss.speak(u); } } catch (e) {} }, 700);
+  }
+  function unlockSpeech() {
+    var ss = window.speechSynthesis; if (!ss || !window.SpeechSynthesisUtterance) return;
+    try {
+      if (ss.paused) ss.resume();
+      if (!spOK) {
+        spOK = true;
+        if (spWait) { var w = spWait; spWait = null; ss.cancel(); ss.speak(w); }
+        else { var z = new SpeechSynthesisUtterance(' '); z.volume = 0; ss.speak(z); }
+      }
+    } catch (e) {}
+  }
+  document.addEventListener('touchend', unlockSpeech, true); document.addEventListener('pointerup', unlockSpeech, true); document.addEventListener('click', unlockSpeech, true); document.addEventListener('keydown', unlockSpeech, true);
+  document.addEventListener('visibilitychange', function () { try { if (document.visibilityState === 'visible') { window.speechSynthesis.cancel(); spOK = false; } } catch (e) {} });
   function say(text, cb) {
     if (!settings.voice || !settings.sound) return;
     try {
@@ -569,8 +595,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
       u.rate = vs === 'bright' ? 1.05 : (smooth ? 0.86 : 1); u.pitch = vs === 'bright' ? 1.3 : (smooth ? 0.92 : 1); u.volume = 1;
       if (cb) { var fin = false, once = function () { if (!fin) { fin = true; cb(); } }; u.onend = once; u.onerror = once; setTimeout(once, 7000); }
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      speakNow(u);
     } catch (e) { if (cb) cb(); }
   }
   try { window.speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {}
