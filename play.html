@@ -360,11 +360,12 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   var stats = { best: 0, games: 0 };
   var hist = []; (function () { var h0 = load(K_HIST); if (Array.isArray(h0)) h0.forEach(function (e) { if (e && valid(e.s)) hist.push(e); }); if (hist.length > 400) hist = hist.slice(-400); })();
   var st0 = load(K_STATS); if (st0 && typeof st0.best === 'number' && typeof st0.games === 'number') stats = st0;
-  var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'smooth', wake: false, dice: true, track: true, closings: 3, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true, autoUpdate: true };
+  var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'natural', vs2: true, wake: false, dice: true, track: true, closings: 3, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true, autoUpdate: true };
   function defaults() { var o = {}; for (var k in DEF) o[k] = DEF[k]; return o; }
   var settings = defaults();
   var se0 = load(K_SET);
   if (se0) for (var key in DEF) { if (se0[key] !== undefined && typeof se0[key] === typeof DEF[key]) settings[key] = se0[key]; }
+  if (se0 && se0.vs2 === undefined && settings.vstyle === 'smooth') settings.vstyle = 'natural'; // one-time switch to the new Natural default
   if (['auto', 'light', 'dark'].indexOf(settings.theme) < 0) settings.theme = 'auto';
   settings.closings = Math.min(4, Math.max(1, settings.closings | 0));
   var hostTheme = document.documentElement.getAttribute('data-theme');
