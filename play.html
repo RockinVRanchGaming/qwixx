@@ -303,6 +303,13 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 
 .resetset.done { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
 .sheet-inner { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+
+/* layout v4: a bit more height for the colour rows */
+.tile, .lock, .score { height: clamp(60px, calc(var(--vh) * 46), 176px); font-size: clamp(28px, calc(var(--vh) * 19), 74px); }
+.score { font-size: clamp(30px, calc(var(--vh) * 20), 78px); }
+.band { padding: 9px 12px 9px 40px; }
+#bands { gap: 9px !important; }
+.app { gap: 7px !important; }
 </style>
 
 <div id="rot">
