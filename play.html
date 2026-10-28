@@ -310,6 +310,12 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 .band { padding: 9px 12px 9px 40px; }
 #bands { gap: 9px !important; }
 .app { gap: 7px !important; }
+
+/* dice tray: its own close button */
+.tray { position: relative; padding: 10px 60px 10px 16px; gap: 8px 18px; }
+.trayx { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(150deg, #8C8576, #4C4639); color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.trayx svg { width: 20px; height: 20px; }
+.trayx:active { transform: scale(.93); }
 </style>
 
 <div id="rot">
@@ -321,6 +327,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     <div class="eyecol"><button class="rb" id="bEye" type="button" hidden aria-label="Hide scores" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path class="sl" d="M4 4l16 16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span class="el">HIDE</span></button></div>
   </div>
   <div class="tray" id="tray" hidden>
+    <button class="trayx" id="trayX" type="button" aria-label="Close the dice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg></button>
     <div class="tdice" id="diceRow" aria-live="polite"></div>
     <button class="rollbtn" id="roll" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="8.2" cy="8.2" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.8" cy="8.2" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="8.2" cy="15.8" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.8" cy="15.8" r="1.5" fill="currentColor" stroke="none"/></svg>ROLL</button>
     <div class="tinfo"><div class="sum" id="sum"></div><div class="combos" id="combos"></div></div>
@@ -787,6 +794,14 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     if (used(hi) <= H * 0.995) { sc = hi; }
     else { for (it = 0; it < 14; it++) { var mid = (lo + hi) / 2; if (used(mid) <= H * 0.995) lo = mid; else hi = mid; } sc = lo; }
     used(sc);
+    // Check what actually landed on screen and shrink a little more if anything hangs off the bottom.
+    for (it = 0; it < 6; it++) {
+      var kids = app.children, bot = 0, top0 = rot.getBoundingClientRect().top, k2;
+      for (k2 = 0; k2 < kids.length; k2++) { if (kids[k2].hidden || kids[k2].offsetParent === null) continue; var rr = kids[k2].getBoundingClientRect(); bot = Math.max(bot, turned ? rr.right - rot.getBoundingClientRect().left : rr.bottom - top0); }
+      if (turned) { bot = 0; for (k2 = 0; k2 < kids.length; k2++) { if (kids[k2].hidden || kids[k2].offsetParent === null) continue; var r3 = kids[k2].getBoundingClientRect(); bot = Math.max(bot, iw - r3.left); } }
+      if (bot <= H * 0.995 || !bot) break;
+      sc = sc * (H * 0.985) / bot; used(sc);
+    }
     if (sc >= 0.999) { app.style.width = ''; app.style.maxWidth = ''; app.style.margin = ''; app.style.transform = ''; }
   }
   function fitSoon() { if (fitBusy) return; fitBusy = true; requestAnimationFrame(function () { fitBusy = false; fit(); }); }
@@ -853,6 +868,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     $('bDice').setAttribute('aria-expanded', !t.hidden);
     if (!t.hidden) drawDice(dice, !!dice);
   });
+  $('trayX').addEventListener('click', function () { $('tray').hidden = true; $('bDice').setAttribute('aria-expanded', 'false'); fit(); });
   $('roll').addEventListener('click', doRoll);
 
   /* settings */
