@@ -464,8 +464,10 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       h += '<section class="band" data-c="' + r.c + '" aria-label="' + r.name + ' row">' + FLAG + '<div class="cells">';
       for (k = 0; k < 11; k++) {
         var on = !!m[k], cls = 'tile' + (on ? ' on' : '');
-        if (!on && k < info.rightmost) cls += ' dead'; else if (!on && k === 10 && info.before < NEED) cls += ' dead wait'; else if (!on && info.shut) cls += ' shut';
-        h += '<button type="button"' + (cls.indexOf(' dead') >= 0 ? ' disabled' : '') + ' class="' + cls + '" data-r="' + i + '" data-i="' + k + '" aria-pressed="' + on + '" aria-label="' + r.name + ' ' + ns[k] + (on ? ', crossed off' : '') + (cls.indexOf(' wait') >= 0 ? ', needs ' + NEED + ' marks first' : '') + '"><span>' + ns[k] + '</span></button>';
+        // A locked row (your own 12/2 or the lock button) can't be marked at all; undo or reopen the lock to change it.
+        var lockedRow = info.shut;
+        if (lockedRow) { if (!on) cls += ' shut'; } else if (!on && k < info.rightmost) cls += ' dead'; else if (!on && k === 10 && info.before < NEED) cls += ' dead wait';
+        h += '<button type="button"' + (cls.indexOf(' dead') >= 0 || lockedRow ? ' disabled' : '') + ' class="' + cls + '" data-r="' + i + '" data-i="' + k + '" aria-pressed="' + on + '" aria-label="' + r.name + ' ' + ns[k] + (on ? ', crossed off' : '') + (lockedRow ? ', row locked' : '') + (cls.indexOf(' wait') >= 0 ? ', needs ' + NEED + ' marks first' : '') + '"><span>' + ns[k] + '</span></button>';
       }
       var lc = 'lock' + (info.last ? (info.before < NEED ? ' mine bad' : ' mine') : (state.closed[i] ? ' other' : ''));
       var lab = info.last ? (info.before < NEED ? 'You locked ' + r.name + ' with fewer than ' + NEED + ' marks' : 'You locked ' + r.name) : (state.closed[i] ? r.name + ' is closed by another player, tap to reopen' : r.name + ' lock, tap if another player closes this row');
