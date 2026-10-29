@@ -316,6 +316,10 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 .trayx { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(150deg, #8C8576, #4C4639); color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
 .trayx svg { width: 20px; height: 20px; }
 .trayx:active { transform: scale(.93); }
+.verbtn{min-height:48px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-weight:800;font-size:16px;color:var(--btn);padding:0 14px;width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.verbtn small{color:var(--muted);font-weight:700;font-size:13px;display:block}
+.sheet .rules h3{margin:12px 0 4px;font-size:15px;color:var(--btn)}.sheet .rules p,.sheet .rules li{font-size:14px;line-height:1.45;margin:0 0 6px;color:var(--ink)}.sheet .rules ul{padding-left:18px;margin:0}
+.sheet .rules table{width:100%;border-collapse:collapse;font-size:14px}.sheet .rules td{padding:5px 4px;border-bottom:1px solid var(--line);color:var(--ink)}.sheet .rules td:last-child{text-align:right;font-weight:800}
 </style>
 
 <div id="rot">
@@ -347,9 +351,23 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 
 <div class="scrim" id="scrim" hidden></div>
 
+<section class="sheet" id="ruleSheet" aria-label="Rules" hidden>
+  <div class="sheet-inner">
+    <div class="top"><h2>Qwixx rules</h2><button class="x" type="button" data-close aria-label="Close">&#10005;</button></div>
+    <div class="rules"><h3>Goal</h3><p>Cross off as many numbers as you can in the four color rows. The more marks in a row, the more it is worth.</p>
+<h3>Rolling</h3><p>The active player rolls all six dice (two white, red, yellow, green, blue).</p><ul><li><b>Everyone</b> may cross off the sum of the two white dice in any one row.</li><li><b>The active player</b> may also cross off one white die plus one colored die, in that color’s row.</li></ul>
+<h3>Left to right</h3><p>Numbers must be crossed off from left to right. Anything you skip is gone for good. Red and yellow run 2 to 12; green and blue run 12 to 2.</p>
+<h3>Failed throws</h3><p>If the active player crosses off nothing, they take a failed throw: −5 points each.</p>
+<h3>Locking a row</h3><p>To cross off the last number in a row (red or yellow 12, green or blue 2) you need at least 5 marks in that row first. Doing so locks the row and gives you a bonus mark. Once a row is locked, nobody can mark it any more; tap the lock if another player locks a row.</p>
+<h3>Game end</h3><p>The game ends when two rows are locked or someone takes their fourth failed throw. (This card can be set to end at a different number of rows.)</p>
+<h3>Scoring a row</h3><table><tr><td>1 / 2 / 3 / 4 marks</td><td>1 / 3 / 6 / 10</td></tr><tr><td>5 / 6 / 7 / 8 marks</td><td>15 / 21 / 28 / 36</td></tr><tr><td>9 / 10 / 11 / 12 marks</td><td>45 / 55 / 66 / 78</td></tr></table><p>Add up all four rows and subtract the failed throws.</p></div>
+    <button class="chipbtn" id="rulesBack" type="button" style="min-height:46px">Back to settings</button>
+  </div>
+</section>
 <section class="sheet" id="setSheet" aria-label="Settings" hidden>
   <div class="sheet-inner">
     <div class="top"><h2>Settings</h2><button class="x" type="button" data-close aria-label="Close">✕</button></div>
+    <button class="verbtn" id="openRules" type="button"><span>How to play &amp; scoring<small>The rules for Qwixx</small></span><span>Open &rsaquo;</span></button>
     <div class="list">
       <div class="li"><span>Dark mode</span><div class="seg" id="segTheme" role="group" aria-label="Dark mode"><button type="button" data-theme-set="auto">Auto</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="dark">Dark</button></div></div>
       <div class="li"><span>Show dice</span><button class="sw" id="swDice" type="button" role="switch" aria-checked="true" aria-label="Show dice"></button></div>
@@ -913,6 +931,11 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     }
   });
   $('bSet').addEventListener('click', function () { loadVoices(); show('setSheet'); });
+  // Rules page, opened from Settings
+  (function () { var o = document.getElementById('openRules'), bk = document.getElementById('rulesBack');
+    if (o) o.addEventListener('click', function () { show('ruleSheet'); });
+    if (bk) bk.addEventListener('click', function () { show('setSheet'); }); })();
+
   $('selVoice').addEventListener('change', function () { settings.voiceName = $('selVoice').value; saveSet(); say('Red seven. Nicely done.'); });
   $('hear').addEventListener('click', function () { say('Red seven. Nicely done.'); });
   // Reset settings: fires on finger lift (some phones swallow the click at the bottom of a scrolled sheet), and confirms on screen.
