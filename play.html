@@ -123,7 +123,7 @@ select.sel { min-height: 42px; max-width: 58%; border-radius: 10px; border: 1px 
 .gt.bon { font-size: 22px; }
 .gt.bon small { position: absolute; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: 800; letter-spacing: .08em; opacity: .9; }
 .gt.bon small.t { top: 4px; } .gt.bon small.b { bottom: 3px; }
-.noscore .score, .noscore .gt.best, .noscore .gt.bon, .noscore .gt.pts, .noscore .gt.total { visibility: hidden; }
+.noscore .score, .noscore .gt.best, .noscore .gt.run, .noscore .gt.bon, .noscore .gt.pts, .noscore .gt.total { visibility: hidden; }
 .list { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
 .li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; padding: 6px 14px; background: var(--panel); border-bottom: 1px solid var(--line); font-weight: 700; font-size: 17px; }
 .li:last-child { border-bottom: 0; }
@@ -320,6 +320,12 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 .verbtn small{color:var(--muted);font-weight:700;font-size:13px;display:block}
 .sheet .rules h3{margin:12px 0 4px;font-size:15px;color:var(--btn)}.sheet .rules p,.sheet .rules li{font-size:14px;line-height:1.45;margin:0 0 6px;color:var(--ink)}.sheet .rules ul{padding-left:18px;margin:0}
 .sheet .rules table{width:100%;border-collapse:collapse;font-size:14px}.sheet .rules td{padding:5px 4px;border-bottom:1px solid var(--line);color:var(--ink)}.sheet .rules td:last-child{text-align:right;font-weight:800}
+
+/* running total (next to best) */
+.gt.run { background: linear-gradient(150deg, #5E7C4A, #3B5530); color: #fff; font-size: 20px; }
+.gt.run small { opacity: .9; }
+.gt.run.armed { background: linear-gradient(150deg, #E5533F, #B02A1B); }
+.noscore .gt.run { visibility: hidden; }
 </style>
 
 <div id="rot">
@@ -392,7 +398,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       <div class="li"><span>Keep screen on</span><button class="sw" id="swWake" type="button" role="switch" aria-checked="false" aria-label="Keep screen on"></button></div>
     </div>
     <div class="line2" id="statLine"></div>
-    <button class="danger" id="clearStats" type="button">Clear best score and games</button>
+    <button class="danger" id="clearStats" type="button">Clear best score, running total and games</button>
     <button class="resetset" id="resetSet" type="button">Reset settings</button>
   </div>
 </section>
@@ -426,6 +432,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   var stats = { best: 0, games: 0 };
   var hist = []; (function () { var h0 = load(K_HIST); if (Array.isArray(h0)) h0.forEach(function (e) { if (e && valid(e.s)) hist.push(e); }); if (hist.length > 400) hist = hist.slice(-400); })();
   var st0 = load(K_STATS); if (st0 && typeof st0.best === 'number' && typeof st0.games === 'number') stats = st0;
+  if (typeof stats.run !== 'number') stats.run = 0; if (typeof stats.runGames !== 'number') stats.runGames = 0; // running total across games (Steve's button)
   var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'natural', vs2: true, wake: false, dice: true, track: true, closings: 3, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true, autoUpdate: true };
   function defaults() { var o = {}; for (var k in DEF) o[k] = DEF[k]; return o; }
   var settings = defaults();
@@ -472,7 +479,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
 
   var revealed = false;
   var MINI = '<img class="mini" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAMAAABiM0N1AAAAkFBMVEWaXC9ZKxurkGaccE7j0KTIpWRpYFKNNR+poIwmHhL07NPJp44XEg7jx2p4RR4WFguuhznFc0kbFhIhGxYvJhgQDQ3t5Mrn3cWHdk40LSE7MiQCAQFaRx5xFxHVx67l17htVyt5ZDhXRypmTCOlmoaJJhnMt5LIuqN3aUpzJRavppCTiHUXEw+QSCfd0rmDHBX3navGAAAAMHRSTlP////////////Z//+m//8X///+//7+///+//8C/v///////v7//////////2z///8kAhihAAAE3ElEQVR42u3Ya3uiOBQA4Fy4atuZyQ20hVDuF6X//9/tSdCuWnCqzu6zHzZ9aiuEl3NOCEbQq2k/diGT821p+3F3uPthCWRedtBbbLZ3tI0Aa3eEnpjM47tbLtnTBD1JFrf5drPQ4LTmZ2lv3sZMPhloxxjJN4Ld2cQmJwyyQ69MxvmWy3shybd5LNkr2sm83XL2QOPbNpc7FEJAQj4CSQEhhUjyeHvlbJybX/NyhcIxl0iKeHPNOWsL3baxAGgTi+8pyxLEsgzxhXYFouIGZ1YSdBHi/BZpEeLX2wIk2luhLxIQsxDnN0oLEP9nISGWqQP0LuYde484NjMdxSL0PgP93RN7bXps40A9mElczErLEJPMK7UulT42olQ64CNl+n0DYnLTBhEcWQZkpWI6rFTZN1op3XtwB4QOIuen0gLE8JAqFUUANY0iWfY+pIOuI7NJNSZDUTvkVJqDYO+gDWOhNNVlHNO66evUbgNKt8LRo0NOspuBuPRIo/UEjWUfrFbrdboKQJx02Fw7UZlGRlqGuNyOI0nXCs6s0jUUW6mSrkdi3jbKJuw4MIrwn0MkX4LAgS5BqqEeqVrTPtJqwDj3IC94q0xYjhM1Jk2Q4qN0CXG2NUc0JZw8pZBaoHSNYvLu2QMjRdcmr8hGBht0dpAuIM42tqJqMBz8XRG4jry8wIHdbF7AgX1wIlsunU/SOQTOtF8FvT1wTUyNVpS22taYqMh17BkC71B5ZzsXkagnp/QGe2RTWsgBz8RTr7U7XQMQ03goU2tDuoD6aVRWTV9OuZjUVEOoyRTqPzlT1oNn/mpXnEaUHaBa93DislWrKLDjnJpixwWFYxzqRO5o+FGNMIij4TQ5jlp2Bok6hYHtBxUFdrwJMcOvPJsPXA2u0Rsvippp3PTnxX0OweRJ61KZPt7QT3NNRaMeGpsxZOZMxZlGP9Lx5yS5iAik/jihgtHUINCO1ulQTnM4IrZGTTsN2Lv8nGwXkNneH6YrXAHK0a5LKMkx33iNNgQxr2lvWCeTJ7P/AvqUlEfr2qVoX1UJgiPEO6lhJsOlBNNZrSDlOpen96NLyEilLa2L/OrjI0HPyKecxb98RF3XqTHEZOaii8/vkF+gg6Qc5Lv0A8JxUYeEoBX9VVX+HlGILOo1Eez8nv0VMh3gnuEg5LpVgrt9lyCBgX1GEGDS+cRVX5xZyN4ilUYV2id72uEkQbiAd6hKqgQazUjML5x5CDrJQRGoUAVhJAneF5kP0VS+cTq74vjySTsLmW4trSooNcLJvusgGqvuAfIRm1tEzEPQVWYogaFPMHp2MUKmOj9dCC/ZZ7dAEFO+r1y3gwMJwmhvk/ITW7C59e0VKISBIlAV3OEO2SpDsagZQja3YluCYBdKME66DuOXAtkyJwl5Rl3GZteQi5DJzff3RYGxABT5nanXT/hAuREyq/kcCz6hAudF8QJZ4vnMrkMnaxzbF7CXYj6g69DJGugTWzrj7yM6X6Usf/m7Bbr6LfK/BxUWKv6H/j0ofxzKDcT+RERMolDmgj/2AIGLXIZoJ8WbYA9IkgEgd+YhSxE+IIETFuYhy+tOsiwUdz9m4SLMmNwdHkS9vYmTb4jit+2069vb4UGUkaBOdzch5dPpwzr2jUBmQmOnD+sMFco7W7ibhL8Ay2makeDu7vMAAAAASUVORK5CYII=">';
-  var bestArmed = false, bestT = null;
+  var bestArmed = false, bestT = null, runArmed = false, runT = null;
   function render() {
     var h = '', i, k;
     var s0 = summary(), over0 = s0.closed >= settings.closings || s0.pens >= 4;
@@ -505,6 +512,9 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     t += bestArmed
       ? '<button type="button" class="gt best armed" id="bBest" aria-label="Tap again to reset best score and games"><b>RESET?</b><span class="games">' + stats.games + '</span></button>'
       : '<button type="button" class="gt best" id="bBest" aria-label="Best score ' + stats.best + ' in ' + stats.games + ' games. Tap to reset.">' + stats.best + '<small>BEST</small><span class="games">' + stats.games + '</span></button>';
+    t += runArmed
+      ? '<button type="button" class="gt best run armed" id="bRun" aria-label="Tap again to reset the running total"><b>RESET?</b><span class="games">' + stats.runGames + '</span></button>'
+      : '<button type="button" class="gt best run" id="bRun" aria-label="Running total ' + stats.run + ' over ' + stats.runGames + ' games. Tap to reset.">' + stats.run + '<small>RUNNING</small><span class="games">' + stats.runGames + '</span></button>';
     for (k = 0; k < 4; k++) t += '<button type="button" class="gt pen' + (state.pen[k] ? ' on' : '') + '" data-pen="' + k + '" aria-pressed="' + !!state.pen[k] + '" aria-label="Failed throw ' + (k + 1) + '"><small>−' + PEN_PTS + '</small></button>';
     if (settings.colBonus) t += '<div class="gt bon' + (s.b.colPts && !mask ? ' got' : '') + '" aria-label="Column bonus ' + (mask ? 'hidden' : s.b.colPts + ' points') + '"><small class="t">BONUS</small>' + (mask ? MINI : s.b.colPts) + '<small class="b">COLUMNS</small></div>';
     if (settings.sameBonus) t += '<div class="gt bon' + (s.b.samePts && !mask ? ' got' : '') + '" aria-label="Same numbers bonus ' + (mask ? 'hidden' : s.b.samePts + ' points') + '"><small class="t">BONUS</small>' + (mask ? MINI : s.b.samePts) + '<small class="b">4 NUMBERS</small></div>';
@@ -522,7 +532,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       stt.innerHTML = '<span class="gt1">GAME OVER</span><span class="gt2">' + why + (settings.track ? ' · Final score ' + s.total : '') + '</span><button type="button" id="newGame">New game</button>';
     }
     else { stt.className = 'status'; stt.textContent = s.closed + (s.closed === 1 ? ' row' : ' rows') + ' closed (game ends at ' + settings.closings + ') · ' + s.pens + (s.pens === 1 ? ' failed throw' : ' failed throws'); }
-    $('statLine').textContent = 'Best score ' + stats.best + ' in ' + stats.games + (stats.games === 1 ? ' game.' : ' games.') + ' Pressing reset on a card with marks counts as one finished game.';
+    $('statLine').textContent = 'Best score ' + stats.best + ' in ' + stats.games + (stats.games === 1 ? ' game.' : ' games.') + ' Running total ' + stats.run + ' over ' + stats.runGames + (stats.runGames === 1 ? ' game.' : ' games.') + ' Pressing reset on a card with marks counts as one finished game.';
   }
 
   /* sound + vibration */
@@ -749,9 +759,13 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   function onTap(e, viaDown) {
     var b = e.target.closest ? e.target.closest('button') : null;
     if (!b) return;
+    if (b.id === 'bRun') {
+      if (!runArmed) { runArmed = true; clearTimeout(runT); runT = setTimeout(function () { runArmed = false; render(); }, 3500); buzz(); render(); return; }
+      clearTimeout(runT); runArmed = false; stats.run = 0; stats.runGames = 0; store(K_STATS, stats); render(); buzz(20); tone(300, 0.12, 'sine'); return;
+    }
     if (b.id === 'bBest') {
       if (!bestArmed) { bestArmed = true; clearTimeout(bestT); bestT = setTimeout(function () { bestArmed = false; render(); }, 3500); buzz(); render(); return; }
-      clearTimeout(bestT); bestArmed = false; stats = { best: 0, games: 0 }; store(K_STATS, stats); render(); buzz(20); tone(300, 0.12, 'sine'); return;
+      clearTimeout(bestT); bestArmed = false; stats = { best: 0, games: 0, run: stats.run, runGames: stats.runGames }; store(K_STATS, stats); render(); buzz(20); tone(300, 0.12, 'sine'); return;
     }
     if (b.id === 'bBack') { goBack(); return; }
     if (b.id === 'newGame') { $('bReset').click(); return; }
@@ -781,7 +795,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   $('bReset').addEventListener('click', function () {
     undoSnap = JSON.stringify({ state: state, stats: stats, hist: hist });
     var counted = hasMarks();
-    if (counted) { var s = summary(); stats.games += 1; if (s.total > stats.best) stats.best = s.total; store(K_STATS, stats); }
+    if (counted) { var s = summary(); stats.games += 1; if (s.total > stats.best) stats.best = s.total; stats.run += s.total; stats.runGames += 1; store(K_STATS, stats); }
     revealed = false; state = blank(); hist = []; store(K_HIST, hist); store(K_STATE, state); render(); buzz(20); tone(300, 0.12, 'sine');
     $('toastmsg').textContent = counted ? 'Card cleared, game counted' : 'Card cleared';
     $('toast').hidden = false; if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, 2500);
@@ -953,9 +967,9 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   var armed = false, armT = null;
   $('clearStats').addEventListener('click', function () {
     var b = $('clearStats');
-    if (!armed) { armed = true; b.textContent = 'Tap again to clear'; armT = setTimeout(function () { armed = false; b.textContent = 'Clear best score and games'; }, 4000); return; }
-    clearTimeout(armT); armed = false; b.textContent = 'Clear best score and games';
-    stats = { best: 0, games: 0 }; store(K_STATS, stats); render();
+    if (!armed) { armed = true; b.textContent = 'Tap again to clear'; armT = setTimeout(function () { armed = false; b.textContent = 'Clear best score, running total and games'; }, 4000); return; }
+    clearTimeout(armT); armed = false; b.textContent = 'Clear best score, running total and games';
+    stats = { best: 0, games: 0, run: 0, runGames: 0 }; store(K_STATS, stats); render();
   });
 
   applyTheme(); paintSettings(); wake(); render();
