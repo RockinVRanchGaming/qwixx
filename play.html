@@ -624,6 +624,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
   document.addEventListener('touchend', unlockSpeech, true); document.addEventListener('pointerup', unlockSpeech, true); document.addEventListener('click', unlockSpeech, true); document.addEventListener('keydown', unlockSpeech, true);
   document.addEventListener('visibilitychange', function () { try { if (document.visibilityState === 'visible') { window.speechSynthesis.cancel(); spOK = false; } } catch (e) {} });
   function say(text, cb) {
+    if (typeof pauseT !== 'undefined' && pauseT && !cb) { clearTimeout(pauseT); pauseT = null; }
     if (!settings.voice || !settings.sound) return;
     try {
       if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (cb) cb(); return; }
@@ -682,7 +683,7 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
     var due = ban.left <= 0;
     if (due) ban.left = gap();
     store(K_BAN, ban);
-    if (kind === 'pick' && r === 3 && i === 0) return { t: 'Damn you Steven.' };
+    if (kind === 'pick' && r === 3 && i === 0) return { t: 'Christine, are you even playing the game, or are you just pressing this to get Steven\'s goat?', pause: 3000 };
     if (!due) return '';
     if (kind === 'lock') return nextLine('lock');
     if (kind === 'fail') return nextLine('fail');
@@ -706,9 +707,12 @@ html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hid
       var p = clipEl.play(); if (p && p.catch) p.catch(function () { say(item.t); });
     } catch (e) { say(item.t); }
   }
+  var pauseT = null;   // a line held back for a dramatic pause; any newer callout cancels it
   function speakWith(base, line) {
+    if (pauseT) { clearTimeout(pauseT); pauseT = null; }
     var it = line && ent(line);
     if (!it) { say(base); return; }
+    if (it.pause) { say(base, function () { pauseT = setTimeout(function () { pauseT = null; say(it.t); }, it.pause); }); return; }
     if (it.a && settings.sound) { if (settings.voice) say(base, function () { playClip(it); }); else playClip(it); return; }
     say(base + '. ' + it.t);
   }
