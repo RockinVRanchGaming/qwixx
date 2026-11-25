@@ -1004,18 +1004,25 @@ var RVHeat = (function () {
     christine: ["Steven, my mother was right about you.", "Steven, honey, that's not how any of this works.", "Oh Steven. Bless your heart.", "Steven, I married you for your looks. Clearly.", "Steven, sweetie, do you need me to explain it again? Slowly?", "I'm not mad, Steven. I'm just disappointed.", "Steven, we've talked about this.", "Steven, my mother warned me. She had charts.", "Steven, did you even read the rules? Any of them?", "Steven, I can't take you anywhere.", "Steven, that was adorable. Wrong, but adorable.", "Steven, are you even playing, or just pressing buttons?", "Steven, let the grown-ups handle this one.", "Steven, go get me a drink. You're done here.", "Steven, I could have married a doctor.", "Steven, it's cute that you try.", "Steven, this is why I handle the checkbook.", "Steven, you're lucky you're handsome.", "Steven, what would you do without me? Don't answer. We both know.", "Steven, I'm going to need you to stop thinking now.", "Steven, I see you. I'm always watching.", "Steven, my sister's husband would never.", "Steven, try to keep up, dear.", "Steven, remind me again why I said yes?", "Steven, I told you so. I'm telling you again. So.", "Steven, that's going in the book of things you got wrong. It's a big book.", "Steven, it's okay. Not everyone can be good at things.", "Steven, you're doing great, sweetie. For you.", "Steven, you had one job.", "Steven, my mother says hi. She also says I told you so.", "Steven, I'm putting that on your permanent record.", "Steven, should I call someone? Like a professional?", "Steven, I love you, but no.", "Steven, we'll talk about this in the car.", "Steven, don't make me use your full name. Steven.", "Steven, you're on dish duty for a month.", "Steven, I can hear you thinking. Stop it.", "Steven, watch and learn, babe. Watch and learn.", "Steven, that's cute. Let me show you how it's done.", "Steven, this is why we can't have nice things.", "Steven, apologize to the dice.", "Steven, sit there and be pretty."]
   };
   var spouseBags = { steve: [], christine: [] }, spouseLast = {};
-  /* family request: a Charlie's phone says "Trump" at random every 1.5 to 3 minutes, for no reason, whether anyone taps or not */
-  function isCharlie() { var o = (typeof RVBook !== 'undefined') && RVBook.owner(); return !!(o && /\b(charlie|charley|charli|charles|chuck|chuckie|chas|chaz)\b/i.test(o.name)); }
-  var trumpT = null;
-  function trumpLater(ms) { clearTimeout(trumpT); trumpT = setTimeout(trumpTick, ms || (90000 + Math.floor(Math.random() * 90001))); }
-  function trumpTick() {
-    if (!isCharlie()) { trumpLater(); return; }
-    var ss = window.speechSynthesis, busy = false;
-    try { busy = !!(ss && (ss.speaking || ss.pending)); } catch (e) {}
-    if (document.hidden || document.getElementById('splash') || !spOK || busy || pauseT) { trumpLater(3000 + Math.floor(Math.random() * 4000)); return; }
-    say('Trump', function () {}); trumpLater();
-  }
-  trumpLater();
+  /* family requests: random out-of-nowhere shouts by phone owner, whether anyone taps or not.
+     Charlie: "Trump" every 1.5 to 3 minutes. Quinn: "Six, seven" every 2 to 4 minutes. */
+  var SHOUTS = [
+    { re: /\b(charlie|charley|charli|charles|chuck|chuckie|chas|chaz)\b/i, text: 'Trump', min: 90000, max: 180000 },
+    { re: /\b(quinn|quin|quinny)\b/i, text: 'Six, seven', min: 120000, max: 240000 }
+  ];
+  SHOUTS.forEach(function (sh) {
+    var t = null;
+    function later(ms) { clearTimeout(t); t = setTimeout(tick, ms || (sh.min + Math.floor(Math.random() * (sh.max - sh.min + 1)))); }
+    function tick() {
+      var o = (typeof RVBook !== 'undefined') && RVBook.owner();
+      if (!(o && sh.re.test(o.name))) { later(); return; }
+      var ss = window.speechSynthesis, busy = false;
+      try { busy = !!(ss && (ss.speaking || ss.pending)); } catch (e) {}
+      if (document.hidden || document.getElementById('splash') || !spOK || busy || pauseT) { later(3000 + Math.floor(Math.random() * 4000)); return; }
+      say(sh.text, function () {}); later();
+    }
+    later();
+  });
   function spouseOf() {
     var o = (typeof RVBook !== 'undefined') && RVBook.owner(); if (!o) return '';
     if (/\b(steve|steven|stephen|stevie|stevey|stevo|stevan|stefan|steffen|esteban)\b/i.test(o.name)) return 'steve';
