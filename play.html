@@ -990,7 +990,7 @@ var RVHeat = (function () {
     var due = ban.left <= 0;
     if (due) ban.left = gap();
     store(K_BAN, ban);
-    if (kind === 'pick' && r === 3 && i === 0) return 'You have the right to bear arms.';
+    if (kind === 'pick' && r === 3 && i === 0) return { t: 'Twelve blue. Twelve blue. Twelve blue.', pause: 10000 };
     if (!due) return '';
     if (kind === 'lock') return nextLine('lock');
     if (kind === 'fail') return nextLine('fail');
