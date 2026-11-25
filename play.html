@@ -1005,10 +1005,12 @@ var RVHeat = (function () {
   };
   var spouseBags = { steve: [], christine: [] }, spouseLast = {};
   /* family requests: random out-of-nowhere shouts by phone owner, whether anyone taps or not.
-     Charlie: "Trump" every 1.5 to 3 minutes. Quinn: "Six, seven" every 2 to 4 minutes. */
+     Charlie: "Trump" every 1.5 to 3 minutes. Quinn: "Six, seven" every 2 to 4 minutes.
+     Marius: a nervous boyfriend talking to Ridley about her dad, every 2 to 4 minutes. */
   var SHOUTS = [
     { re: /\b(charlie|charley|charli|charles|chuck|chuckie|chas|chaz)\b/i, text: 'Trump', min: 90000, max: 180000 },
-    { re: /\b(quinn|quin|quinny)\b/i, text: 'Six, seven', min: 120000, max: 240000 }
+    { re: /\b(quinn|quin|quinny)\b/i, text: 'Six, seven', min: 120000, max: 240000 },
+    { re: /\b(marius|maruis|mareus|marrius)\b/i, lines: ["Ridley, your dad is staring at me again.", "Ridley, I think your dad still hasn't forgiven me for that one Thanksgiving.", "Ridley, does your dad ever blink?", "Ridley, your dad just asked me what my five-year plan is. In the middle of a game.", "Ridley, I'm pretty sure your dad is letting me win so he can study my weaknesses.", "Ridley, your dad called me son. Is that good or bad?", "Ridley, why does your dad keep mentioning he owns a truck?", "Ridley, your dad shook my hand so hard I can't feel my fingers.", "Ridley, I think your dad is keeping a file on me.", "Ridley, your dad said he'd be watching. I didn't think he meant this closely.", "Ridley, should I let your dad win? I feel like I should let your dad win.", "Ridley, your dad told me a joke and I laughed too late. Am I done for?", "Ridley, your dad just called himself Conquistador. Do I call him that too?", "Ridley, I've been calling your dad sir all night and he hasn't told me to stop.", "Ridley, I think your dad likes me. He only glared at me twice today.", "Ridley, your dad asked if I know how to change a tire. I said yes. I do not.", "Ridley, does your dad do this to everyone, or just me?", "Ridley, your dad's handshake had a follow-up question.", "Ridley, I'm going to need you to tell your dad I'm a really good guy.", "Ridley, your dad told me the record book is forever. Was that a threat?", "Ridley, your dad just winked at me. I'm scared.", "Ridley, I think I just passed your dad's test. Or failed it. Hard to tell.", "Ridley, your dad says I hold my cards wrong.", "Ridley, is it normal that your dad knows my license plate number?", "Ridley, your dad offered me a soda. Is it poisoned?", "Ridley, I'm trying so hard to impress your dad right now.", "Ridley, your dad asked if I've ever driven a hotshot trailer. Is that a job offer or a warning?", "Ridley, your dad said nice roll. He definitely didn't mean it.", "Ridley, help. Your dad wants to talk about my intentions.", "Ridley, if your dad wins this game, I'm moving to Montana. Oh wait."], min: 120000, max: 240000 }
   ];
   SHOUTS.forEach(function (sh) {
     var t = null;
@@ -1019,7 +1021,9 @@ var RVHeat = (function () {
       var ss = window.speechSynthesis, busy = false;
       try { busy = !!(ss && (ss.speaking || ss.pending)); } catch (e) {}
       if (document.hidden || document.getElementById('splash') || !spOK || busy || pauseT) { later(3000 + Math.floor(Math.random() * 4000)); return; }
-      say(sh.text, function () {}); later();
+      var line = sh.text;
+      if (sh.lines) { if (!sh.bag || !sh.bag.length) { sh.bag = sh.lines.slice(); for (var k = sh.bag.length - 1; k > 0; k--) { var j = Math.floor(Math.random() * (k + 1)), tt = sh.bag[k]; sh.bag[k] = sh.bag[j]; sh.bag[j] = tt; } if (sh.bag[sh.bag.length - 1] === sh.last) sh.bag.unshift(sh.bag.pop()); } line = sh.last = sh.bag.pop(); }
+      say(line, function () {}); later();
     }
     later();
   });
