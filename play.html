@@ -998,6 +998,9 @@ var RVHeat = (function () {
     return chance(0.2) ? nextLine('teen') : nextLine('normal');
   }
   function plus(b) { return b ? '. ' + b : ''; }
+  /* family request: when this phone belongs to a Steve, every box he marks gets an apology to Christine */
+  var STEVE_LINE = 'You\'re right, Christine. I\'m sorry.';
+  function isSteve() { var o = (typeof RVBook !== 'undefined') && RVBook.owner(); return !!(o && /\b(steve|steven|stephen|stevie|stevey|stevo|stevan|stefan|steffen|esteban)\b/i.test(o.name)); }
   // One voice for everything: the callout and the banter line are spoken together.
   // Recorded clips (family voices): the callout is spoken, then the clip plays. No clip means the phone voice reads the text.
   var clipEl = new Audio(), clipReady = false;
@@ -1088,6 +1091,7 @@ var RVHeat = (function () {
       change(function () { state.rows[r][i] = was ? 0 : 1; }, '[data-r="' + r + '"][data-i="' + i + '"]', kb, !was);
       var num = nums(ROWS[r])[i], nm = COLORS_SAY[r];
       if (was) say(nm + ' ' + num + ' removed');
+      else if (isSteve()) { if (i === 10 && !over0 && gameOver()) say(nm + ' ' + num + '. ' + STEVE_LINE + ' ' + nm + ' is locked. ' + goLine()); else if (i === 10) say(nm + ' ' + num + '. ' + STEVE_LINE + ' ' + nm + ' is locked.'); else say(nm + ' ' + num + '. ' + STEVE_LINE); }
       else if (i === 10) { if (!over0 && gameOver()) say(nm + ' ' + num + '. ' + nm + ' is locked. ' + goLine() + ''); else speakWith(nm + ' ' + num + '. ' + nm + ' is locked', banter('lock')); }
       else speakWith(nm + ' ' + num, banter('pick', r, i));
     } else if (b.hasAttribute('data-pen')) {
