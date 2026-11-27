@@ -86,6 +86,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .tile.on::before, .tile.on::after, .pen.on::before, .pen.on::after { content: ""; position: absolute; left: 50%; top: 50%; width: 56%; height: 5px; margin: -2.5px 0 0 -28%; border-radius: 3px; background: var(--tile); transform: rotate(45deg); }
 .tile.on::after, .pen.on::after { transform: rotate(-45deg); }
 .tile.dead { opacity: .42; }
+.tile.on.fixed:disabled { opacity: 1; cursor: default; }
 .tile.shut:not(.on) { opacity: .42; }
 .lock { border-radius: 50%; aspect-ratio: 1; width: auto; justify-self: center; }
 .lock svg { width: 52%; height: 52%; }
@@ -734,13 +735,15 @@ var RVHeat = (function () {
   var hist = []; (function () { var h0 = load(K_HIST); if (Array.isArray(h0)) h0.forEach(function (e) { if (e && valid(e.s)) hist.push(e); }); if (hist.length > 400) hist = hist.slice(-400); })();
   var st0 = load(K_STATS); if (st0 && typeof st0.best === 'number' && typeof st0.games === 'number') stats = st0;
   if (typeof stats.run !== 'number') stats.run = 0; if (typeof stats.runGames !== 'number') stats.runGames = 0; // running total across games (Steve's button)
-  var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'natural', vs2: true, wake: false, dice: true, track: true, closings: 3, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true, autoUpdate: true };
+  var DEF = { sound: true, vib: true, voice: true, voiceName: '', vstyle: 'natural', vs2: true, wake: true, dice: true, track: true, closings: 2, colBonus: true, colPts: 5, sameBonus: true, samePts: 5, theme: 'auto', rot: 'auto', hideScores: false, banter: true, autoUpdate: true };
   function defaults() { var o = {}; for (var k in DEF) o[k] = DEF[k]; return o; }
   var settings = defaults();
   var se0 = load(K_SET);
   if (se0) for (var key in DEF) { if (se0[key] !== undefined && typeof se0[key] === typeof DEF[key]) settings[key] = se0[key]; }
   if (se0 && se0.vs2 === undefined && settings.vstyle === 'smooth') settings.vstyle = 'natural'; // one-time switch to the new Natural default
   if (['auto', 'light', 'dark'].indexOf(settings.theme) < 0) settings.theme = 'auto';
+  if (se0 && !se0.mig1127) { settings.wake = true; settings.closings = 2; }   // one-time: screen stays on and the game ends at 2 locked rows (11/27/2026 family request)
+  settings.mig1127 = true; if (!se0 || !se0.mig1127) store(K_SET, settings);
   settings.closings = Math.min(4, Math.max(1, settings.closings | 0));
   var hostTheme = document.documentElement.getAttribute('data-theme');
   function applyTheme() {
@@ -792,8 +795,9 @@ var RVHeat = (function () {
         var on = !!m[k], cls = 'tile' + (on ? ' on' : '');
         // A locked row (your own 12/2 or the lock button) can't be marked at all; undo or reopen the lock to change it.
         var lockedRow = info.shut;
-        if (lockedRow) { if (!on) cls += ' shut'; } else if (!on && k < info.rightmost) cls += ' dead'; else if (!on && k === 10 && info.before < NEED) cls += ' dead wait';
-        h += '<button type="button"' + (cls.indexOf(' dead') >= 0 || lockedRow ? ' disabled' : '') + ' class="' + cls + '" data-r="' + i + '" data-i="' + k + '" aria-pressed="' + on + '" aria-label="' + r.name + ' ' + ns[k] + (on ? ', crossed off' : '') + (lockedRow ? ', row locked' : '') + (cls.indexOf(' wait') >= 0 ? ', needs ' + NEED + ' marks first' : '') + '"><span>' + ns[k] + '</span></button>';
+        // A mark with another mark to its right is set for good; only the furthest-right mark can be taken back (Undo still works).
+        if (lockedRow) { if (!on) cls += ' shut'; } else if (on && k < info.rightmost) cls += ' fixed'; else if (!on && k < info.rightmost) cls += ' dead'; else if (!on && k === 10 && info.before < NEED) cls += ' dead wait';
+        h += '<button type="button"' + (cls.indexOf(' dead') >= 0 || cls.indexOf(' fixed') >= 0 || lockedRow ? ' disabled' : '') + ' class="' + cls + '" data-r="' + i + '" data-i="' + k + '" aria-pressed="' + on + '" aria-label="' + r.name + ' ' + ns[k] + (on ? ', crossed off' : '') + (lockedRow ? ', row locked' : '') + (cls.indexOf(' wait') >= 0 ? ', needs ' + NEED + ' marks first' : '') + '"><span>' + ns[k] + '</span></button>';
       }
       var lc = 'lock' + (info.last ? (info.before < NEED ? ' mine bad' : ' mine') : (state.closed[i] ? ' other' : ''));
       var lab = info.last ? (info.before < NEED ? 'You locked ' + r.name + ' with fewer than ' + NEED + ' marks' : 'You locked ' + r.name) : (state.closed[i] ? r.name + ' is closed by another player, tap to reopen' : r.name + ' lock, tap if another player closes this row');
@@ -990,7 +994,7 @@ var RVHeat = (function () {
     var due = ban.left <= 0;
     if (due) ban.left = gap();
     store(K_BAN, ban);
-    if (kind === 'pick' && r === 3 && i === 0) return { t: 'Twelve blue. Twelve blue. Twelve blue.', pause: 10000 };
+    if (kind === 'pick' && r === 3 && i === 0) return 'Damn you, Steven.';
     if (!due) return '';
     if (kind === 'lock') return nextLine('lock');
     if (kind === 'fail') return nextLine('fail');
@@ -998,46 +1002,6 @@ var RVHeat = (function () {
     return chance(0.2) ? nextLine('teen') : nextLine('normal');
   }
   function plus(b) { return b ? '. ' + b : ''; }
-  /* family requests: a Steve's phone sweet-talks Christine on every marked box; a Christine's phone roasts Steven. Everyone else gets normal callouts. */
-  var SPOUSE_LINES = {
-    steve: ["You're right, Christine. I'm sorry.", "Christine, I'm so lucky to have you.", "Christine, have I told you today how beautiful you look?", "Sorry, Christine. That one's on me.", "Christine, you were right. You're always right.", "I don't deserve you, Christine.", "Christine, I'll do the dishes tonight. All of them.", "My apologies, Christine. It won't happen again.", "Christine, you're the smartest person at this table.", "Christine, light of my life, I'm sorry.", "I should have listened to you, Christine.", "Christine, did you do something different with your hair? It looks amazing.", "Whatever you think, Christine. You know best.", "Christine, I'm the luckiest man alive.", "Sorry, honey. I mean it this time.", "Christine, you make this whole family better.", "I was wrong, Christine. Write it down.", "Christine, I'll take out the trash. And I'll be happy about it.", "Christine, you're even better at this game than you are at being right.", "Forgive me, Christine. I know not what I do.", "Christine, my love, my everything, I apologize.", "I'll rub your feet later, Christine.", "Christine, you're the brains of this operation.", "Yes, dear. Sorry, dear.", "Christine, I married way up.", "Christine, I'll put the toilet seat down. Forever.", "Christine, you were right about the thermostat too.", "Christine, I'd be lost without you. Literally. You have the directions.", "I'm sorry, Christine. I'm sorry for things I haven't even done yet.", "Christine, you are the queen of this house.", "Christine, I'll let you pick the restaurant. Every time.", "My bad, Christine. All of it. Always.", "Christine, you're a saint for putting up with me.", "Christine, I'm making you breakfast tomorrow. In bed.", "Christine, you look radiant when you're right. Which is always.", "Apologies, my queen.", "Christine, I promise I'll fold the laundry this time.", "Christine, best decision I ever made was you.", "Sorry, Christine. Blame the dice, not me. Actually, blame me.", "Christine, flowers are on the way.", "Christine, I agree with everything you've ever said.", "Christine, you're my lucky charm, and also my boss."],
-    christine: ["Steven, my mother was right about you.", "Steven, honey, that's not how any of this works.", "Oh Steven. Bless your heart.", "Steven, I married you for your looks. Clearly.", "Steven, sweetie, do you need me to explain it again? Slowly?", "I'm not mad, Steven. I'm just disappointed.", "Steven, we've talked about this.", "Steven, my mother warned me. She had charts.", "Steven, did you even read the rules? Any of them?", "Steven, I can't take you anywhere.", "Steven, that was adorable. Wrong, but adorable.", "Steven, are you even playing, or just pressing buttons?", "Steven, let the grown-ups handle this one.", "Steven, go get me a drink. You're done here.", "Steven, I could have married a doctor.", "Steven, it's cute that you try.", "Steven, this is why I handle the checkbook.", "Steven, you're lucky you're handsome.", "Steven, what would you do without me? Don't answer. We both know.", "Steven, I'm going to need you to stop thinking now.", "Steven, I see you. I'm always watching.", "Steven, my sister's husband would never.", "Steven, try to keep up, dear.", "Steven, remind me again why I said yes?", "Steven, I told you so. I'm telling you again. So.", "Steven, that's going in the book of things you got wrong. It's a big book.", "Steven, it's okay. Not everyone can be good at things.", "Steven, you're doing great, sweetie. For you.", "Steven, you had one job.", "Steven, my mother says hi. She also says I told you so.", "Steven, I'm putting that on your permanent record.", "Steven, should I call someone? Like a professional?", "Steven, I love you, but no.", "Steven, we'll talk about this in the car.", "Steven, don't make me use your full name. Steven.", "Steven, you're on dish duty for a month.", "Steven, I can hear you thinking. Stop it.", "Steven, watch and learn, babe. Watch and learn.", "Steven, that's cute. Let me show you how it's done.", "Steven, this is why we can't have nice things.", "Steven, apologize to the dice.", "Steven, sit there and be pretty."]
-  };
-  var spouseBags = { steve: [], christine: [] }, spouseLast = {};
-  /* family requests: random out-of-nowhere shouts by phone owner, whether anyone taps or not.
-     Charlie: "Trump" every 1.5 to 3 minutes. Quinn: "Six, seven" every 2 to 4 minutes.
-     Marius: a nervous boyfriend talking to Ridley about her dad, every 2 to 4 minutes. */
-  var SHOUTS = [
-    { re: /\b(charlie|charley|charli|charles|chuck|chuckie|chas|chaz)\b/i, text: 'Trump', min: 90000, max: 180000 },
-    { re: /\b(quinn|quin|quinny)\b/i, text: 'Six, seven', min: 120000, max: 240000 },
-    { re: /\b(marius|maruis|mareus|marrius)\b/i, lines: ["Ridley, your dad is staring at me again.", "Ridley, I think your dad still hasn't forgiven me for that one Thanksgiving.", "Ridley, does your dad ever blink?", "Ridley, your dad just asked me what my five-year plan is. In the middle of a game.", "Ridley, I'm pretty sure your dad is letting me win so he can study my weaknesses.", "Ridley, your dad called me son. Is that good or bad?", "Ridley, why does your dad keep mentioning he owns a truck?", "Ridley, your dad shook my hand so hard I can't feel my fingers.", "Ridley, I think your dad is keeping a file on me.", "Ridley, your dad said he'd be watching. I didn't think he meant this closely.", "Ridley, should I let your dad win? I feel like I should let your dad win.", "Ridley, your dad told me a joke and I laughed too late. Am I done for?", "Ridley, your dad just called himself Conquistador. Do I call him that too?", "Ridley, I've been calling your dad sir all night and he hasn't told me to stop.", "Ridley, I think your dad likes me. He only glared at me twice today.", "Ridley, your dad asked if I know how to change a tire. I said yes. I do not.", "Ridley, does your dad do this to everyone, or just me?", "Ridley, your dad's handshake had a follow-up question.", "Ridley, I'm going to need you to tell your dad I'm a really good guy.", "Ridley, your dad told me the record book is forever. Was that a threat?", "Ridley, your dad just winked at me. I'm scared.", "Ridley, I think I just passed your dad's test. Or failed it. Hard to tell.", "Ridley, your dad says I hold my cards wrong.", "Ridley, is it normal that your dad knows my license plate number?", "Ridley, your dad offered me a soda. Is it poisoned?", "Ridley, I'm trying so hard to impress your dad right now.", "Ridley, your dad asked if I've ever driven a hotshot trailer. Is that a job offer or a warning?", "Ridley, your dad said nice roll. He definitely didn't mean it.", "Ridley, help. Your dad wants to talk about my intentions.", "Ridley, if your dad wins this game, I'm moving to Montana. Oh wait."], min: 120000, max: 240000 }
-  ];
-  SHOUTS.forEach(function (sh) {
-    var t = null;
-    function later(ms) { clearTimeout(t); t = setTimeout(tick, ms || (sh.min + Math.floor(Math.random() * (sh.max - sh.min + 1)))); }
-    function tick() {
-      var o = (typeof RVBook !== 'undefined') && RVBook.owner();
-      if (!(o && sh.re.test(o.name))) { later(); return; }
-      var ss = window.speechSynthesis, busy = false;
-      try { busy = !!(ss && (ss.speaking || ss.pending)); } catch (e) {}
-      if (document.hidden || document.getElementById('splash') || !spOK || busy || pauseT) { later(3000 + Math.floor(Math.random() * 4000)); return; }
-      var line = sh.text;
-      if (sh.lines) { if (!sh.bag || !sh.bag.length) { sh.bag = sh.lines.slice(); for (var k = sh.bag.length - 1; k > 0; k--) { var j = Math.floor(Math.random() * (k + 1)), tt = sh.bag[k]; sh.bag[k] = sh.bag[j]; sh.bag[j] = tt; } if (sh.bag[sh.bag.length - 1] === sh.last) sh.bag.unshift(sh.bag.pop()); } line = sh.last = sh.bag.pop(); }
-      say(line, function () {}); later();
-    }
-    later();
-  });
-  function spouseOf() {
-    var o = (typeof RVBook !== 'undefined') && RVBook.owner(); if (!o) return '';
-    if (/\b(steve|steven|stephen|stevie|stevey|stevo|stevan|stefan|steffen|esteban)\b/i.test(o.name)) return 'steve';
-    if (/\b(christine|christina|chris|chrissy|christy|christie|kristine|kristina|kristin|kristen|kris|krissy|kristy)\b/i.test(o.name)) return 'christine';
-    return '';
-  }
-  function spouseLine(who) {   /* shuffle bag: every line plays once before any repeat, never twice in a row */
-    var bag = spouseBags[who];
-    if (!bag.length) { bag = SPOUSE_LINES[who].slice(); for (var k = bag.length - 1; k > 0; k--) { var j = Math.floor(Math.random() * (k + 1)), t = bag[k]; bag[k] = bag[j]; bag[j] = t; } if (bag[bag.length - 1] === spouseLast[who]) bag.unshift(bag.pop()); spouseBags[who] = bag; }
-    return (spouseLast[who] = bag.pop());
-  }
   // One voice for everything: the callout and the banter line are spoken together.
   // Recorded clips (family voices): the callout is spoken, then the clip plays. No clip means the phone voice reads the text.
   var clipEl = new Audio(), clipReady = false;
@@ -1054,6 +1018,27 @@ var RVHeat = (function () {
       var p = clipEl.play(); if (p && p.catch) p.catch(function () { say(item.t); });
     } catch (e) { say(item.t); }
   }
+  /* family requests: random out-of-nowhere shouts by phone owner, whether anyone taps or not.
+     Charlie: "Trump" every 1.5 to 3 minutes. Quinn: "Six, seven" every 2 to 4 minutes. */
+  var SHOUTS = [
+    { re: /\b(charlie|charley|charli|charles|chuck|chuckie|chas|chaz)\b/i, text: 'Trump', min: 90000, max: 180000 },
+    { re: /\b(quinn|quin|quinny)\b/i, text: 'Six, seven', min: 120000, max: 240000 }
+  ];
+  SHOUTS.forEach(function (sh) {
+    var t = null;
+    function later(ms) { clearTimeout(t); t = setTimeout(tick, ms || (sh.min + Math.floor(Math.random() * (sh.max - sh.min + 1)))); }
+    function tick() {
+      var o = (typeof RVBook !== 'undefined') && RVBook.owner();
+      if (!(o && sh.re.test(o.name))) { later(); return; }
+      var ss = window.speechSynthesis, busy = false;
+      try { busy = !!(ss && (ss.speaking || ss.pending)); } catch (e) {}
+      if (document.hidden || document.getElementById('splash') || !spOK || busy || pauseT) { later(3000 + Math.floor(Math.random() * 4000)); return; }
+      var line = sh.text;
+      if (sh.lines) { if (!sh.bag || !sh.bag.length) { sh.bag = sh.lines.slice(); for (var k = sh.bag.length - 1; k > 0; k--) { var j = Math.floor(Math.random() * (k + 1)), tt = sh.bag[k]; sh.bag[k] = sh.bag[j]; sh.bag[j] = tt; } if (sh.bag[sh.bag.length - 1] === sh.last) sh.bag.unshift(sh.bag.pop()); } line = sh.last = sh.bag.pop(); }
+      say(line, function () {}); later();
+    }
+    later();
+  });
   var pauseT = null;   // a line held back for a dramatic pause; any newer callout cancels it
   function speakWith(base, line) {
     if (pauseT) { clearTimeout(pauseT); pauseT = null; }
@@ -1125,10 +1110,10 @@ var RVHeat = (function () {
     var kb = !viaDown && e.detail === 0;
     if (b.hasAttribute('data-i')) {
       var r = +b.getAttribute('data-r'), i = +b.getAttribute('data-i'), was = state.rows[r][i], over0 = gameOver();
+      if (was && rowInfo(r).rightmost > i) { buzz(30); return; }
       change(function () { state.rows[r][i] = was ? 0 : 1; }, '[data-r="' + r + '"][data-i="' + i + '"]', kb, !was);
       var num = nums(ROWS[r])[i], nm = COLORS_SAY[r];
       if (was) say(nm + ' ' + num + ' removed');
-      else if (spouseOf()) { var sw = spouseOf(); if (i === 10 && !over0 && gameOver()) say(nm + ' ' + num + '. ' + spouseLine(sw) + ' ' + nm + ' is locked. ' + goLine()); else if (i === 10) say(nm + ' ' + num + '. ' + spouseLine(sw) + ' ' + nm + ' is locked.'); else say(nm + ' ' + num + '. ' + spouseLine(sw)); }
       else if (i === 10) { if (!over0 && gameOver()) say(nm + ' ' + num + '. ' + nm + ' is locked. ' + goLine() + ''); else speakWith(nm + ' ' + num + '. ' + nm + ' is locked', banter('lock')); }
       else speakWith(nm + ' ' + num, banter('pick', r, i));
     } else if (b.hasAttribute('data-pen')) {
